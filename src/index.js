@@ -9,7 +9,7 @@ const corsOptions = {
   origin: 'http://localhost:3000',
   methods: ['GET', 'POST'],
   allowedHeaders: ['Content-Type'],
-  optionsSuccessStatus: 204
+  optionsSuccessStatus: 204,
 };
 
 app.use(cors(corsOptions));
@@ -17,7 +17,7 @@ app.use(express.json());
 
 app.options('*', cors(corsOptions));
 
-const emmiter = new EventEmitter()
+const emitter = new EventEmitter();
 
 app.get('/', (req, res) => {
   res.send('Hello World!');
@@ -29,19 +29,22 @@ app.post('/messages', (req, res) => {
   const { text } = req.body;
   const message = {
     text,
-    time: new Date()
+    time: new Date(),
   };
 
   messages.push(message);
-  emmiter.emit('message', message)
+  emitter.emit('message', message);
   res.status(201).send(messages);
 });
 
 app.get('/messages', (req, res) => {
-  emmiter.once('message', (message) => {
-    res.status(200).send(messages);
-  })
- 
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('Cache-Control', 'no-store');
+
+  emitter.on('message', (message) => {
+    res.write(`data: ${JSON.stringify(message)}\n\n`);
+  });
 });
 
 app.listen(PORT, () => {
