@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import { EventEmitter } from 'events';
 
 const PORT = process.env.PORT || 3005;
 const app = express();
@@ -16,6 +17,8 @@ app.use(express.json());
 
 app.options('*', cors(corsOptions));
 
+const emmiter = new EventEmitter()
+
 app.get('/', (req, res) => {
   res.send('Hello World!');
 });
@@ -30,11 +33,15 @@ app.post('/messages', (req, res) => {
   };
 
   messages.push(message);
+  emmiter.emit('message', message)
   res.status(201).send(messages);
 });
 
 app.get('/messages', (req, res) => {
-  res.status(200).send(messages);
+  emmiter.once('message', (message) => {
+    res.status(200).send(messages);
+  })
+ 
 });
 
 app.listen(PORT, () => {
