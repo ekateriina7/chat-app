@@ -8,10 +8,13 @@ const corsOptions = {
   origin: 'http://localhost:3000',
   methods: ['GET', 'POST'],
   allowedHeaders: ['Content-Type'],
+  optionsSuccessStatus: 204
 };
 
-app.use(express.json());
 app.use(cors(corsOptions));
+app.use(express.json());
+
+app.options('*', cors(corsOptions));
 
 app.get('/', (req, res) => {
   res.send('Hello World!');
@@ -35,5 +38,5 @@ app.get('/messages', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}/`);
+  console.log(`Server running at http://localhost:${PORT}`);
 });
