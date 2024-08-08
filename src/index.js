@@ -42,9 +42,16 @@ app.get('/messages', (req, res) => {
   res.setHeader('Connection', 'keep-alive');
   res.setHeader('Cache-Control', 'no-store');
 
-  emitter.on('message', (message) => {
+  const cb = (message) => {
     res.write(`data: ${JSON.stringify(message)}\n\n`);
-  });
+  }
+
+  emitter.on('message', cb);
+
+  res.on('close', () => {
+    emitter.off('message', cb)
+  })
+  console.log(emitter.listenerCount('message'))
 });
 
 app.listen(PORT, () => {
