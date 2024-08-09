@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import { EventEmitter } from 'events';
+import { WebSocketServer } from 'ws';
 
 const PORT = process.env.PORT || 3005;
 const app = express();
@@ -15,14 +16,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
-app.options('*', cors(corsOptions));
-
 const emitter = new EventEmitter();
-
-app.get('/', (req, res) => {
-  res.send('Hello World!');
-});
-
 const messages = [];
 
 app.post('/messages', (req, res) => {
@@ -44,16 +38,38 @@ app.get('/messages', (req, res) => {
 
   const cb = (message) => {
     res.write(`data: ${JSON.stringify(message)}\n\n`);
-  }
+  };
 
   emitter.on('message', cb);
 
   res.on('close', () => {
-    emitter.off('message', cb)
-  })
-  console.log(emitter.listenerCount('message'))
+    emitter.off('message', cb);
+    res.end();
+    console.log('Client disconnected from SSE');
+  });
+
+  console.log(emitter.listenerCount('message'));
 });
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
+});
+
+const wss = new WebSocketServer({ server });
+
+wss.on('connection', (ws) => {
+  console.log('Client connected to WebSocket');
+
+  ws.send(JSON.stringify(messages));
+
+  const sendMessage = (message) => {
+    ws.send(JSON.stringify(message));
+  };
+
+  emitter.on('message', sendMessage);
+
+  ws.on('close', () => {
+    console.log('Client disconnected from WebSocket');
+    emitter.off('message', sendMessage);
+  });
 });
